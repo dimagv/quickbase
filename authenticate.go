@@ -1,3 +1,5 @@
+// Copyright 2013 James Massara. All rights reserved.
+
 package quickbase
 
 import (
@@ -28,6 +30,8 @@ type AuthenticateResponse struct {
 	Udata       string   `xml:"udata"`
 }
 
+// Autenticate gets a time-based ticket from QuickBase to use with other API
+// requests.
 func (qb *QuickBase) Authenticate(auth *Authenticate) (*AuthenticateResponse, *QuickBaseError) {
 	params := makeParams("API_Authenticate")
 	params["url"] = fmt.Sprintf("https://%s/db/main", qb.Domain)
