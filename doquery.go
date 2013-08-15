@@ -1,3 +1,5 @@
+// Copyright 2013 James Massara. All rights reserved.
+
 package quickbase
 
 import (
@@ -7,7 +9,7 @@ import (
 
 // API_DoQuery request parameters.
 // See http://goo.gl/vHzW5K for more details.
-// Note, the `Fmt' field is hardcoded to `structured'.
+// Note: The `Fmt' field is hardcoded to `structured'.
 type DoQuery struct {
 	XMLName          xml.Name `xml:"qdbapi"`
 	Query            string   `xml:"query,omitempty"`
@@ -50,6 +52,7 @@ type DoQueryResponse struct {
 	} `xml:"table>records>record"`
 }
 
+// DoQuery queries a QuickBase database (dbid).
 func (qb *QuickBase) DoQuery(dbid string, q *DoQuery) (*DoQueryResponse, *QuickBaseError) {
 	params := makeParams("API_DoQuery")
 	params["url"] = fmt.Sprintf("https://%s/db/%s", qb.Domain, dbid)
@@ -77,6 +80,7 @@ func (qb *QuickBase) DoQuery(dbid string, q *DoQuery) (*DoQueryResponse, *QuickB
 	return resp, nil
 }
 
+// GetRecords returns a map of records from the DoQuery request.
 func (q *DoQueryResponse) GetRecords() map[int]map[string]string {
 	fieldMap := make(map[int]string)
 	records := make(map[int]map[string]string)
