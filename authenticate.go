@@ -36,7 +36,7 @@ func (qb *QuickBase) Authenticate(auth *Authenticate) (*AuthenticateResponse, *Q
 	params := makeParams("API_Authenticate")
 	params["url"] = fmt.Sprintf("https://%s/db/main", qb.Domain)
 
-	resp := &AuthenticateResponse{}
+	resp := new(AuthenticateResponse)
 	if err := qb.query(params, auth, resp); err != nil {
 		return nil, &QuickBaseError{msg: err.Error()}
 	}

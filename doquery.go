@@ -44,6 +44,7 @@ type DoQueryResponse struct {
 	} `xml:"table>fields>field"`
 
 	Record []struct {
+		Rid      int    `xml:"rid,attr"`
 		UpdateId string `xml:"update_id"`
 		Data     []struct {
 			Id    int    `xml:"id,attr"`
@@ -68,7 +69,7 @@ func (qb *QuickBase) DoQuery(dbid string, q *DoQuery) (*DoQueryResponse, *QuickB
 		q.Qname = ""
 	}
 
-	resp := &DoQueryResponse{}
+	resp := new(DoQueryResponse)
 	if err := qb.query(params, q, resp); err != nil {
 		return nil, &QuickBaseError{msg: err.Error()}
 	}
