@@ -1,6 +1,5 @@
 quickbase
 =========
-
 Partial implementation of the QuickBase API (http://www.quickbase.com/api-guide/index.html)
 
 Example
@@ -11,7 +10,7 @@ package main
 import (
     "fmt"
     "github.com/jmassara/quickbase"
-    "os"
+    "log"
 )
 
 const targetdomain = "somecorp.quickbase.com"
@@ -26,8 +25,7 @@ func main() {
     })
 
     if err != nil {
-        fmt.Printf("Failed to authenticate to QuickBase (%s): %s\n", targetdomain, err)
-        os.Exit(1)
+        log.Fatalf("Failed to authenticate to QuickBase (%s): %s\n", targetdomain, err)
     }
 
     query, err := qb.DoQuery("bddfa5nbx", &quickbase.DoQuery{
@@ -42,8 +40,7 @@ func main() {
     })
 
     if err != nil {
-        fmt.Printf("Failed to query QuickBase (%s): %s\n", targetdomain, err)
-        os.Exit(1)
+        log.Fatalf("Failed to query QuickBase (%s): %s\n", targetdomain, err)
     }
 
     for _, record := range query.GetRecords() {
