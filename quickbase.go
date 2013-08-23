@@ -23,6 +23,22 @@ func New(domain string) *QuickBase {
 	return &QuickBase{Domain: domain}
 }
 
+// Field represents an entry in a QuickBase record.
+type Field struct {
+	Id    int    `xml:"fid,attr"`
+	Value string `xml:",chardata"`
+}
+
+// QuickBaseError represents a detailed error message returned by the QB API
+type QuickBaseError struct {
+	msg    string
+	Detail string
+}
+
+func (e *QuickBaseError) Error() string { return e.msg }
+
+// Helper functions
+
 // Send an XML API request to QuickBase and populate `response' with the XML
 // response returned from QuickBase.
 func (qb *QuickBase) query(params map[string]string, request, response interface{}) error {
@@ -55,16 +71,6 @@ func (qb *QuickBase) query(params map[string]string, request, response interface
 	defer res.Body.Close()
 	return xml.NewDecoder(res.Body).Decode(response)
 }
-
-// QuickBaseError represents a detailed error message returned by the QB API
-type QuickBaseError struct {
-	msg    string
-	Detail string
-}
-
-func (e *QuickBaseError) Error() string { return e.msg }
-
-// Helper functions
 
 // makeParams returns an initial map with the action set.
 func makeParams(action string) map[string]string {
