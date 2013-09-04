@@ -60,6 +60,7 @@ func (qb *QuickBase) query(params map[string]string, request, response interface
 	req.Header.Set("Quickbase-Action", params["action"])
 
 	client := &http.Client{Transport: &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}}
 
