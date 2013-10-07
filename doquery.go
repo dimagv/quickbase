@@ -1,4 +1,6 @@
 // Copyright 2013 James Massara. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
 package quickbase
 
@@ -9,8 +11,10 @@ import (
 
 // API_DoQuery request parameters.
 // See http://goo.gl/vHzW5K for more details.
-// Note: The `Fmt' field is hardcoded to `structured'.
-type DoQuery struct {
+// Note: The following fields have hardcoded values for XML parsing
+//  * `Fmt` is set to `structured`
+//  * `IncludeRids` is set to `1`
+type DoQueryRequest struct {
 	XMLName          xml.Name `xml:"qdbapi"`
 	Query            string   `xml:"query,omitempty"`
 	Qid              string   `xml:"qid,omitempty"`
@@ -38,28 +42,32 @@ type DoQueryResponse struct {
 	UserId      string   `xml:"userid"`
 	Udata       string   `xml:"udata"`
 
-	Field []struct {
-		Id    int    `xml:"id,attr"`
-		Label string `xml:"label"`
-	} `xml:"table>fields>field"`
-
-	Record []struct {
+	Records []struct {
 		Rid      int    `xml:"rid,attr"`
 		UpdateId string `xml:"update_id"`
-		Data     []struct {
+		Fields   []struct {
 			Id    int    `xml:"id,attr"`
 			Value string `xml:",chardata"`
 		} `xml:"f"`
 	} `xml:"table>records>record"`
+
+	FieldLabels []struct {
+		Id    int    `xml:"id,attr"`
+		Label string `xml:"label"`
+	} `xml:"table>fields>field"`
+
+	// Private fields
+	labels map[int]string `xml:"-"`
 }
 
 // DoQuery queries a QuickBase database (dbid).
-func (qb *QuickBase) DoQuery(dbid string, q *DoQuery) (*DoQueryResponse, *QuickBaseError) {
+func (qb *QuickBase) DoQuery(dbid string, q *DoQueryRequest) (*DoQueryResponse, *QBError) {
 	params := makeParams("API_DoQuery")
 	params["url"] = fmt.Sprintf("https://%s/db/%s", qb.Domain, dbid)
 
-	// Hardcoded to `structured' for XML decoding
+	// Set defaults
 	q.Fmt = "structured"
+	q.IncludeRids = 1
 
 	// Only pass one of the query types in the request
 	if q.Query != "" {
@@ -71,32 +79,43 @@ func (qb *QuickBase) DoQuery(dbid string, q *DoQuery) (*DoQueryResponse, *QuickB
 
 	resp := new(DoQueryResponse)
 	if err := qb.query(params, q, resp); err != nil {
-		return nil, &QuickBaseError{msg: err.Error()}
+		return nil, &QBError{msg: err.Error()}
 	}
 
 	if resp.ErrorCode != 0 {
-		return nil, &QuickBaseError{msg: resp.ErrorText, Detail: resp.ErrorDetail}
+		return nil, &QBError{msg: resp.ErrorText, Detail: resp.ErrorDetail}
+	}
+
+	// Map of record field id to its label name
+	resp.labels = make(map[int]string)
+	for _, field := range resp.FieldLabels {
+		resp.labels[field.Id] = field.Label
 	}
 
 	return resp, nil
 }
 
-// GetRecords returns a map of records from the DoQuery request.
-func (q *DoQueryResponse) GetRecords() map[int]map[string]string {
-	fieldMap := make(map[int]string)
-	records := make(map[int]map[string]string)
+// Record represents a Quickbase record result
+type Record struct {
+	Id       int
+	UpdateId string
+	// Each field of the record where the map key is the field id.
+	Fields map[int]struct{ Label, Value string }
+}
 
-	for _, field := range q.Field {
-		fieldMap[field.Id] = field.Label
-	}
-
-	for num, record := range q.Record {
-		recordData := make(map[string]string)
-		for _, data := range record.Data {
-			recordData[fieldMap[data.Id]] = data.Value
+func (r *DoQueryResponse) GetRecords() []Record {
+	records := make([]Record, len(r.Records))
+	for i, record := range r.Records {
+		fields := make(map[int]struct{ Label, Value string })
+		for _, field := range record.Fields {
+			fields[field.Id] = struct{ Label, Value string }{
+				Label: r.labels[field.Id],
+				Value: field.Value,
+			}
 		}
-		records[num] = recordData
+		records[i].Id = record.Rid
+		records[i].UpdateId = record.UpdateId
+		records[i].Fields = fields
 	}
-
 	return records
 }

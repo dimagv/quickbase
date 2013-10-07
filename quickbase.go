@@ -1,4 +1,6 @@
 // Copyright 2013 James Massara. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
 // Package quickbase implements pieces of the Quickbase API.
 package quickbase
@@ -23,19 +25,13 @@ func New(domain string) *QuickBase {
 	return &QuickBase{Domain: domain}
 }
 
-// Field represents an entry in a QuickBase record.
-type Field struct {
-	Id    int    `xml:"fid,attr"`
-	Value string `xml:",chardata"`
-}
-
-// QuickBaseError represents a detailed error message returned by the QB API
-type QuickBaseError struct {
+// QBError represents a detailed error message returned by the QuickBase API
+type QBError struct {
 	msg    string
 	Detail string
 }
 
-func (e *QuickBaseError) Error() string { return e.msg }
+func (e *QBError) Error() string { return e.msg }
 
 // Helper functions
 
@@ -68,8 +64,8 @@ func (qb *QuickBase) query(params map[string]string, request, response interface
 	if err != nil {
 		return err
 	}
-
 	defer res.Body.Close()
+
 	return xml.NewDecoder(res.Body).Decode(response)
 }
 
