@@ -34,12 +34,12 @@ type AuthResponse struct {
 
 // Autenticate gets a time-based ticket from QuickBase to use with other API
 // requests.
-func (qb *QuickBase) Authenticate(auth *AuthRequest) (*AuthResponse, *QBError) {
+func (qb *QuickBase) Authenticate(req *AuthRequest) (*AuthResponse, *QBError) {
 	params := makeParams("API_Authenticate")
 	params["url"] = fmt.Sprintf("%s/db/main", qb.url)
 
 	resp := new(AuthResponse)
-	if err := qb.query(params, auth, resp); err != nil {
+	if err := qb.query(params, req, resp); err != nil {
 		return nil, &QBError{msg: err.Error()}
 	}
 

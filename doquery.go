@@ -64,24 +64,24 @@ type DoQueryResponse struct {
 }
 
 // DoQuery queries a QuickBase database.
-func (qb *QuickBase) DoQuery(dbid string, q *DoQueryRequest) (*DoQueryResponse, *QBError) {
+func (qb *QuickBase) DoQuery(dbid string, req *DoQueryRequest) (*DoQueryResponse, *QBError) {
 	params := makeParams("API_DoQuery")
 	params["url"] = fmt.Sprintf("%s/db/%s", qb.url, dbid)
 
 	// Set defaults
-	q.Fmt = "structured"
-	q.IncludeRids = 1
+	req.Fmt = "structured"
+	req.IncludeRids = 1
 
 	// Only pass one of the query types in the request
-	if q.Query != "" {
-		q.Qid = ""
-		q.Qname = ""
-	} else if q.Qid != "" {
-		q.Qname = ""
+	if req.Query != "" {
+		req.Qid = ""
+		req.Qname = ""
+	} else if req.Qid != "" {
+		req.Qname = ""
 	}
 
 	resp := new(DoQueryResponse)
-	if err := qb.query(params, q, resp); err != nil {
+	if err := qb.query(params, req, resp); err != nil {
 		return nil, &QBError{msg: err.Error()}
 	}
 

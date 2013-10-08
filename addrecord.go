@@ -51,12 +51,12 @@ func (r *AddRecordRequest) AddField(id int, value string) {
 }
 
 // AddRecord adds a new record to a QuickBase database.
-func (qb *QuickBase) AddRecord(dbid string, rec *AddRecordRequest) (*AddRecordResponse, *QBError) {
+func (qb *QuickBase) AddRecord(dbid string, req *AddRecordRequest) (*AddRecordResponse, *QBError) {
 	params := makeParams("API_AddRecord")
 	params["url"] = fmt.Sprintf("%s/db/%s", qb.url, dbid)
 
 	resp := new(AddRecordResponse)
-	if err := qb.query(params, rec, resp); err != nil {
+	if err := qb.query(params, req, resp); err != nil {
 		return nil, &QBError{msg: err.Error()}
 	}
 
