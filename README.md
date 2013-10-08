@@ -11,24 +11,26 @@ package main
 import (
     "github.com/jmassara/quickbase"
     "log"
+    "net/url"
 )
 
 const (
-    const qbdomain = "https://somecorp.quickbase.com"
+    const qbhost = "https://somecorp.quickbase.com"
     // QuickBase field ids
     const BusinessPhoneNumber = 6
     const Email               = 7
 )
 
 func main() {
-    qb := quickbase.New(qbdomain)
+    qburl, _ := url.Parse(qbhost)
+    qb := quickbase.New(qburl)
     auth, err := qb.Authenticate(&quickbase.AuthRequest{
         Username: "PTBarnum",
         Password: "TopSecret",
         Hours:    1,
     })
     if err != nil {
-        log.Fatalf("Failed to authenticate to QuickBase (%s): %s\n", qbdomain, err)
+        log.Fatalf("Failed to authenticate to QuickBase (%s): %s\n", qbhost, err)
     }
 
     query, err := qb.DoQuery("bddfa5nbx", &quickbase.DoQueryRequest{
@@ -42,7 +44,7 @@ func main() {
         Options:     "num-4.sortorder-A.skp-10.onlynew",
     })
     if err != nil {
-        log.Fatalf("Failed to query QuickBase (%s): %s\n", qbdomain, err)
+        log.Fatalf("Failed to query QuickBase (%s): %s\n", qbhost, err)
     }
 
     for _, r := range query.GetRecords() {
