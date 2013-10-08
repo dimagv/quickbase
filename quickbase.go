@@ -17,12 +17,12 @@ import (
 
 // QuickBase represents a QuickBase domain.
 type QuickBase struct {
-	Domain string
+	domain string
 }
 
 // New creates a new QuickBase.
 func New(domain string) *QuickBase {
-	return &QuickBase{Domain: domain}
+	return &QuickBase{domain: domain}
 }
 
 // QBError represents a detailed error message returned by the QuickBase API

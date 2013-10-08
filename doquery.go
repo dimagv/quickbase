@@ -63,7 +63,7 @@ type DoQueryResponse struct {
 // DoQuery queries a QuickBase database (dbid).
 func (qb *QuickBase) DoQuery(dbid string, q *DoQueryRequest) (*DoQueryResponse, *QBError) {
 	params := makeParams("API_DoQuery")
-	params["url"] = fmt.Sprintf("https://%s/db/%s", qb.Domain, dbid)
+	params["url"] = fmt.Sprintf("https://%s/db/%s", qb.domain, dbid)
 
 	// Set defaults
 	q.Fmt = "structured"
