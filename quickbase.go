@@ -13,16 +13,20 @@ import (
 	"crypto/tls"
 	"encoding/xml"
 	"net/http"
+	"net/url"
 )
 
 // QuickBase represents a QuickBase domain.
 type QuickBase struct {
-	domain string
+	url *url.URL
 }
 
 // New creates a new QuickBase.
-func New(domain string) *QuickBase {
-	return &QuickBase{domain: domain}
+func New(url *url.URL) *QuickBase {
+	if url.Scheme == "" {
+		url.Scheme = "https"
+	}
+	return &QuickBase{url: url}
 }
 
 // QBError represents a detailed error message returned by the QuickBase API
