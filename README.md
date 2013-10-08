@@ -14,7 +14,7 @@ import (
 )
 
 const (
-    const qbdomain = "somecorp.quickbase.com"
+    const qbdomain = "https://somecorp.quickbase.com"
     // QuickBase field ids
     const BusinessPhoneNumber = 6
     const Email               = 7
