@@ -36,7 +36,7 @@ type AuthResponse struct {
 // requests.
 func (qb *QuickBase) Authenticate(auth *AuthRequest) (*AuthResponse, *QBError) {
 	params := makeParams("API_Authenticate")
-	params["url"] = fmt.Sprintf("https://%s/db/main", qb.domain)
+	params["url"] = fmt.Sprintf("%s/db/main", qb.url)
 
 	resp := new(AuthResponse)
 	if err := qb.query(params, auth, resp); err != nil {
@@ -44,7 +44,11 @@ func (qb *QuickBase) Authenticate(auth *AuthRequest) (*AuthResponse, *QBError) {
 	}
 
 	if resp.ErrorCode != 0 {
-		return nil, &QBError{msg: resp.ErrorText, Code: resp.ErrorCode, Detail: resp.ErrorDetail}
+		return nil, &QBError{
+			msg:    resp.ErrorText,
+			Code:   resp.ErrorCode,
+			Detail: resp.ErrorDetail,
+		}
 	}
 
 	return resp, nil

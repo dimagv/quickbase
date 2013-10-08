@@ -9,11 +9,12 @@ import (
 	"fmt"
 )
 
-// API_DoQuery request parameters.
-// See http://goo.gl/vHzW5K for more details.
-// Note: The following fields have hardcoded values for XML parsing
-//  * `Fmt` is set to `structured`
-//  * `IncludeRids` is set to `1`
+// API_DoQuery request parameters. See http://goo.gl/vHzW5K for more details.
+//
+// The following XML API values have hardcoded defaults for XML decoding in the
+// response:
+//  <fmt>structured</fmt>
+//  <includeRids>1</includeRids>
 type DoQueryRequest struct {
 	XMLName          xml.Name `xml:"qdbapi"`
 	Query            string   `xml:"query,omitempty"`
@@ -23,11 +24,13 @@ type DoQueryRequest struct {
 	Slist            string   `xml:"slist,omitempty"`
 	ReturnPercentage int      `xml:"returnpercentage,omitempty"`
 	Options          string   `xml:"options,omitempty"`
-	IncludeRids      int      `xml:"includeRids,omitempty"`
 	Ticket           string   `xml:"ticket"`
 	AppToken         string   `xml:"apptoken,omitempty"`
 	Udata            string   `xml:"udata,omitempty"`
-	Fmt              string   `xml:"fmt"`
+
+	// These fields have hardcoded defaults.
+	Fmt         string `xml:"fmt"`
+	IncludeRids int    `xml:"includeRids"`
 }
 
 // Response to an API_DoQuery request.
@@ -60,10 +63,10 @@ type DoQueryResponse struct {
 	labels map[int]string `xml:"-"`
 }
 
-// DoQuery queries a QuickBase database (dbid).
+// DoQuery queries a QuickBase database.
 func (qb *QuickBase) DoQuery(dbid string, q *DoQueryRequest) (*DoQueryResponse, *QBError) {
 	params := makeParams("API_DoQuery")
-	params["url"] = fmt.Sprintf("https://%s/db/%s", qb.domain, dbid)
+	params["url"] = fmt.Sprintf("%s/db/%s", qb.url, dbid)
 
 	// Set defaults
 	q.Fmt = "structured"
@@ -83,7 +86,11 @@ func (qb *QuickBase) DoQuery(dbid string, q *DoQueryRequest) (*DoQueryResponse, 
 	}
 
 	if resp.ErrorCode != 0 {
-		return nil, &QBError{msg: resp.ErrorText, Code: resp.ErrorCode, Detail: resp.ErrorDetail}
+		return nil, &QBError{
+			msg:    resp.ErrorText,
+			Code:   resp.ErrorCode,
+			Detail: resp.ErrorDetail,
+		}
 	}
 
 	// Map of record field id to its label name
@@ -95,11 +102,11 @@ func (qb *QuickBase) DoQuery(dbid string, q *DoQueryRequest) (*DoQueryResponse, 
 	return resp, nil
 }
 
-// Record represents a Quickbase record result
+// Record is a Quickbase record result
 type Record struct {
 	Id       int
 	UpdateId string
-	// Each field of the record where the map key is the field id.
+	// Each field in the record with the map key set to the field id.
 	Fields map[int]struct{ Label, Value string }
 }
 

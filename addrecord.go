@@ -36,7 +36,8 @@ type AddRecordResponse struct {
 	UpdateId    string   `xml:"update_id"`
 }
 
-// addRecordField represents a field when adding a record in QuickBase.
+// addRecordField is a field when adding a record in QuickBase.
+//
 // The XML structure for fields (and may other things) are inconsistent across
 // the Quickbase API.
 type addRecordField struct {
@@ -49,10 +50,10 @@ func (r *AddRecordRequest) AddField(id int, value string) {
 	r.Fields = append(r.Fields, addRecordField{Id: id, Value: value})
 }
 
-// AddRecord adds a new record to a QuickBase database (dbid).
+// AddRecord adds a new record to a QuickBase database.
 func (qb *QuickBase) AddRecord(dbid string, rec *AddRecordRequest) (*AddRecordResponse, *QBError) {
 	params := makeParams("API_AddRecord")
-	params["url"] = fmt.Sprintf("https://%s/db/%s", qb.domain, dbid)
+	params["url"] = fmt.Sprintf("%s/db/%s", qb.url, dbid)
 
 	resp := new(AddRecordResponse)
 	if err := qb.query(params, rec, resp); err != nil {
@@ -60,7 +61,11 @@ func (qb *QuickBase) AddRecord(dbid string, rec *AddRecordRequest) (*AddRecordRe
 	}
 
 	if resp.ErrorCode != 0 {
-		return nil, &QBError{msg: resp.ErrorText, Code: resp.ErrorCode, Detail: resp.ErrorDetail}
+		return nil, &QBError{
+			msg:    resp.ErrorText,
+			Code:   resp.ErrorCode,
+			Detail: resp.ErrorDetail,
+		}
 	}
 
 	return resp, nil
