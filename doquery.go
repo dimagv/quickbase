@@ -83,7 +83,7 @@ func (qb *QuickBase) DoQuery(dbid string, q *DoQueryRequest) (*DoQueryResponse, 
 	}
 
 	if resp.ErrorCode != 0 {
-		return nil, &QBError{msg: resp.ErrorText, Detail: resp.ErrorDetail}
+		return nil, &QBError{msg: resp.ErrorText, Code: resp.ErrorCode, Detail: resp.ErrorDetail}
 	}
 
 	// Map of record field id to its label name

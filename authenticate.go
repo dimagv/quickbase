@@ -44,7 +44,7 @@ func (qb *QuickBase) Authenticate(auth *AuthRequest) (*AuthResponse, *QBError) {
 	}
 
 	if resp.ErrorCode != 0 {
-		return nil, &QBError{msg: resp.ErrorText, Detail: resp.ErrorDetail}
+		return nil, &QBError{msg: resp.ErrorText, Code: resp.ErrorCode, Detail: resp.ErrorDetail}
 	}
 
 	return resp, nil

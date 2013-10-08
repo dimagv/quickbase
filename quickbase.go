@@ -28,6 +28,7 @@ func New(domain string) *QuickBase {
 // QBError represents a detailed error message returned by the QuickBase API
 type QBError struct {
 	msg    string
+	Code   int
 	Detail string
 }
 
