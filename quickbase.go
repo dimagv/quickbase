@@ -10,7 +10,6 @@ package quickbase
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/xml"
 	"net/http"
 	"net/url"
@@ -18,7 +17,8 @@ import (
 
 // QuickBase represents a QuickBase domain.
 type QuickBase struct {
-	url *url.URL
+	url    *url.URL
+	client *http.Client
 }
 
 // New creates a new QuickBase.
@@ -26,7 +26,14 @@ func New(url *url.URL) *QuickBase {
 	if url.Scheme == "" {
 		url.Scheme = "https"
 	}
-	return &QuickBase{url: url}
+	return &QuickBase{
+		url: url,
+		client: &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+			},
+		},
+	}
 }
 
 // QBError represents a detailed error message returned by the QuickBase API
@@ -60,12 +67,7 @@ func (qb *QuickBase) query(params map[string]string, request, response interface
 	req.Header.Set("Content-Type", "application/xml")
 	req.Header.Set("Quickbase-Action", params["action"])
 
-	client := &http.Client{Transport: &http.Transport{
-		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}}
-
-	res, err := client.Do(req)
+	res, err := qb.client.Do(req)
 	if err != nil {
 		return err
 	}
