@@ -23,7 +23,7 @@ var (
 
 func setup() {
 	mux = http.NewServeMux()
-	server = httptest.NewTLSServer(mux)
+	server = httptest.NewServer(mux)
 	qbdomain, _ = url.Parse(server.URL)
 }
 
@@ -42,17 +42,17 @@ func testAction(t *testing.T, h http.Header, expect string) {
 }
 
 var authtests = []struct {
+	path     string
 	username string
 	password string
-	path     string
 	xmlresp  string
 	qbresp   *quickbase.AuthResponse
-	err      quickbase.QBError
+	err      *quickbase.QBError
 }{
 	{
+		path:     "/success",
 		username: "PTBarnum",
 		password: "TopSecret",
-		path:     "/success",
 		xmlresp:  authSuccess,
 		qbresp: &quickbase.AuthResponse{
 			XMLName:   xml.Name{Local: "qdbapi"},
@@ -62,15 +62,15 @@ var authtests = []struct {
 			Ticket:    "2_beeinrxmv_dpvx_b_crf8ttndjwyf9bui94rhciirqcs",
 			UserId:    "112245.efy7",
 		},
-		err: quickbase.QBError{},
+		err: nil,
 	},
 	{
+		path:     "/failure",
 		username: "PTBarnum",
 		password: "WrongPassword",
-		path:     "/failure",
 		xmlresp:  authFailure,
 		qbresp:   nil,
-		err: quickbase.QBError{
+		err: &quickbase.QBError{
 			Code:   20,
 			Detail: "Sorry! You entered the wrong E-Mail or Screen Name or Password. Try again.",
 		},
