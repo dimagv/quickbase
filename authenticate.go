@@ -6,12 +6,11 @@ package quickbase
 
 import (
 	"encoding/xml"
-	"fmt"
 )
 
 // API_Authenticate request parameters.
 // See http://goo.gl/eQSiZy for more details.
-type AuthRequest struct {
+type authRequest struct {
 	XMLName  xml.Name `xml:"qdbapi"`
 	Username string   `xml:"username"`
 	Password string   `xml:"password"`
@@ -21,35 +20,33 @@ type AuthRequest struct {
 
 // Response to an API_Authenticate request.
 // See http://goo.gl/eQSiZy for more details.
-type AuthResponse struct {
-	XMLName     xml.Name `xml:"qdbapi"`
-	Action      string   `xml:"action"`
-	ErrorCode   int      `xml:"errcode"`
-	ErrorText   string   `xml:"errtext"`
-	ErrorDetail string   `xml:"errdetail"`
-	Ticket      string   `xml:"ticket"`
-	UserId      string   `xml:"userid"`
-	Udata       string   `xml:"udata"`
+type authResponse struct {
+	XMLName xml.Name `xml:"qdbapi"`
+	Ticket  string   `xml:"ticket"`
+	UserId  string   `xml:"userid"`
+
+	qbresponse // Fields returned in every response
 }
 
 // Autenticate gets a time-based ticket from QuickBase to use with other API
 // requests.
-func (qb *QuickBase) Authenticate(req *AuthRequest) (*AuthResponse, *QBError) {
-	params := makeParams("API_Authenticate")
-	params["url"] = fmt.Sprintf("%s/db/main", qb.url)
+func (qb *QuickBase) Authenticate(username, password string, hours int) error {
+	request := authRequest{Username: username, Password: password, Hours: hours}
+	response := new(authResponse)
 
-	resp := new(AuthResponse)
-	if err := qb.query(params, req, resp); err != nil {
-		return nil, &QBError{msg: err.Error()}
+	if err := qb.query("API_Authenticate", "", request, response); err != nil {
+		return err
 	}
 
-	if resp.ErrorCode != 0 {
-		return nil, &QBError{
-			msg:    resp.ErrorText,
-			Code:   resp.ErrorCode,
-			Detail: resp.ErrorDetail,
+	if response.ErrorCode != 0 {
+		return &QBError{
+			msg:    response.ErrorText,
+			Code:   response.ErrorCode,
+			Detail: response.ErrorDetail,
 		}
+	} else {
+		qb.ticket = response.Ticket
 	}
 
-	return resp, nil
+	return nil
 }

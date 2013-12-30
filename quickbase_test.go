@@ -5,26 +5,24 @@
 package quickbase_test
 
 import (
-	"encoding/xml"
 	"fmt"
-	"github.com/jmassara/quickbase"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"reflect"
 	"testing"
+
+	"github.com/jmassara/quickbase"
 )
 
 var (
 	mux      *http.ServeMux
 	server   *httptest.Server
-	qbdomain *url.URL
+	qbdomain string
 )
 
 func setup() {
 	mux = http.NewServeMux()
 	server = httptest.NewServer(mux)
-	qbdomain, _ = url.Parse(server.URL)
+	qbdomain = server.URL
 }
 
 func teardown() {
@@ -41,50 +39,32 @@ func testAction(t *testing.T, h http.Header, expect string) {
 	}
 }
 
-var authtests = []struct {
+var authTests = []struct {
 	path     string
 	username string
 	password string
 	xmlresp  string
-	qbresp   *quickbase.AuthResponse
-	err      *quickbase.QBError
+	err      string
 }{
 	{
 		path:     "/success",
 		username: "PTBarnum",
 		password: "TopSecret",
 		xmlresp:  authSuccess,
-		qbresp: &quickbase.AuthResponse{
-			XMLName:   xml.Name{Local: "qdbapi"},
-			Action:    "api_authenticate",
-			ErrorCode: 0,
-			ErrorText: "No error",
-			Ticket:    "2_beeinrxmv_dpvx_b_crf8ttndjwyf9bui94rhciirqcs",
-			UserId:    "112245.efy7",
-		},
-		err: nil,
 	},
 	{
 		path:     "/failure",
 		username: "PTBarnum",
 		password: "WrongPassword",
 		xmlresp:  authFailure,
-		qbresp:   nil,
-		err: &quickbase.QBError{
-			Code:   20,
-			Detail: "Sorry! You entered the wrong E-Mail or Screen Name or Password. Try again.",
-		},
+		err:      "Unknown username/password",
 	},
 }
 
 func TestAuthentication(t *testing.T) {
 	setup()
 	defer teardown()
-
-	for _, tt := range authtests {
-		qburl := qbdomain
-		qburl.Path = tt.path
-
+	for _, tt := range authTests {
 		mux.HandleFunc(tt.path+"/db/main",
 			func(w http.ResponseWriter, r *http.Request) {
 				testAction(t, r.Header, "API_Authenticate")
@@ -92,20 +72,11 @@ func TestAuthentication(t *testing.T) {
 			},
 		)
 
-		qb := quickbase.New(qburl)
-		resp, err := qb.Authenticate(&quickbase.AuthRequest{
-			Username: tt.username,
-			Password: tt.password,
-		})
+		qb := quickbase.New(qbdomain + tt.path)
+		err := qb.Authenticate(tt.username, tt.password, 1)
 
-		if err != nil {
-			if err.Detail != tt.err.Detail {
-				t.Errorf("expected: %s, got: %s", tt.err.Detail, err.Detail)
-			}
-		}
-
-		if !reflect.DeepEqual(resp, tt.qbresp) {
-			t.Errorf("expected: %+v, got: %+v", tt.qbresp, resp)
+		if err != nil && err.Error() != tt.err {
+			t.Fatal(err)
 		}
 	}
 }
@@ -115,19 +86,19 @@ func TestAuthentication(t *testing.T) {
 // API_Authenticate
 var authSuccess = `<?xml version="1.0" ?>
 <qdbapi>
-	<action>api_authenticate</action>
-	<errcode>0</errcode>
-	<errtext>No error</errtext>
-	<ticket>2_beeinrxmv_dpvx_b_crf8ttndjwyf9bui94rhciirqcs</ticket>
-	<userid>112245.efy7</userid>
+    <action>api_authenticate</action>
+    <errcode>0</errcode>
+    <errtext>No error</errtext>
+    <ticket>2_beeinrxmv_dpvx_b_crf8ttndjwyf9bui94rhciirqcs</ticket>
+    <userid>112245.efy7</userid>
 </qdbapi>
 `
 
 var authFailure = `<?xml version="1.0" ?>
 <qdbapi>
-	<action>API_Authenticate</action>
-	<errcode>20</errcode>
-	<errtext>Unknown username/password</errtext>
-	<errdetail>Sorry! You entered the wrong E-Mail or Screen Name or Password. Try again.</errdetail>
+    <action>API_Authenticate</action>
+    <errcode>20</errcode>
+    <errtext>Unknown username/password</errtext>
+    <errdetail>Sorry! You entered the wrong E-Mail or Screen Name or Password. Try again.</errdetail>
 </qdbapi>
 `

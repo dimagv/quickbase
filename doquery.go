@@ -6,44 +6,35 @@ package quickbase
 
 import (
 	"encoding/xml"
-	"fmt"
 )
 
-// API_DoQuery request parameters. See http://goo.gl/vHzW5K for more details.
-//
-// The following XML API values have hardcoded defaults for XML decoding in the
-// response:
-//  <fmt>structured</fmt>
-//  <includeRids>1</includeRids>
+// API_DoQuery request parameters.
+// See http://goo.gl/vHzW5K for more details.
 type DoQueryRequest struct {
 	XMLName          xml.Name `xml:"qdbapi"`
 	Query            string   `xml:"query,omitempty"`
-	Qid              string   `xml:"qid,omitempty"`
+	Qid              int      `xml:"qid,omitempty"`
 	Qname            string   `xml:"qname,omitempty"`
 	Clist            string   `xml:"clist,omitempty"`
 	Slist            string   `xml:"slist,omitempty"`
 	ReturnPercentage int      `xml:"returnpercentage,omitempty"`
 	Options          string   `xml:"options,omitempty"`
-	Ticket           string   `xml:"ticket"`
-	AppToken         string   `xml:"apptoken,omitempty"`
 	Udata            string   `xml:"udata,omitempty"`
 
-	// These fields have hardcoded defaults.
-	Fmt         string `xml:"fmt"`
-	IncludeRids int    `xml:"includeRids"`
+	qbrequest      // Fields required for every request
+	doQueryRequest // Fields defined in doQueryRequest have hardcoded values
+}
+
+type doQueryRequest struct {
+	Fmt         string `xml:"fmt"`         // defaults to "structured"
+	IncludeRids int    `xml:"includeRids"` // defaults to 1
 }
 
 // Response to an API_DoQuery request.
 // See http://goo.gl/vHzW5K for more details.
 type DoQueryResponse struct {
-	XMLName     xml.Name `xml:"qdbapi"`
-	Action      string   `xml:"action"`
-	ErrorCode   int      `xml:"errcode"`
-	ErrorText   string   `xml:"errtext"`
-	ErrorDetail string   `xml:"errdetail"`
-	Ticket      string   `xml:"ticket"`
-	UserId      string   `xml:"userid"`
-	Udata       string   `xml:"udata"`
+	XMLName xml.Name `xml:"qdbapi"`
+	Udata   string   `xml:"udata"`
 
 	Records []struct {
 		Rid      int    `xml:"rid,attr"`
@@ -59,30 +50,30 @@ type DoQueryResponse struct {
 		Label string `xml:"label"`
 	} `xml:"table>fields>field"`
 
-	// Private fields
+	// Field label keyed by its id
 	labels map[int]string `xml:"-"`
+
+	qbresponse // Fields returned in every response
 }
 
 // DoQuery queries a QuickBase database.
-func (qb *QuickBase) DoQuery(dbid string, req *DoQueryRequest) (*DoQueryResponse, *QBError) {
-	params := makeParams("API_DoQuery")
-	params["url"] = fmt.Sprintf("%s/db/%s", qb.url, dbid)
-
-	// Set defaults
+func (qb *QuickBase) DoQuery(dbid string, req *DoQueryRequest) (*DoQueryResponse, error) {
+	req.Ticket = qb.ticket
+	req.AppToken = qb.apptoken
 	req.Fmt = "structured"
 	req.IncludeRids = 1
 
 	// Only pass one of the query types in the request
 	if req.Query != "" {
-		req.Qid = ""
+		req.Qid = 0
 		req.Qname = ""
-	} else if req.Qid != "" {
+	} else if req.Qid > 0 {
 		req.Qname = ""
 	}
 
 	resp := new(DoQueryResponse)
-	if err := qb.query(params, req, resp); err != nil {
-		return nil, &QBError{msg: err.Error()}
+	if err := qb.query("API_DoQuery", dbid, req, resp); err != nil {
+		return nil, err
 	}
 
 	if resp.ErrorCode != 0 {

@@ -12,22 +12,20 @@ import (
 	"bytes"
 	"encoding/xml"
 	"net/http"
-	"net/url"
 )
 
-// QuickBase represents a QuickBase domain.
+// QuickBase represents a QuickBase host.
 type QuickBase struct {
-	url    *url.URL
-	client *http.Client
+	host     string
+	ticket   string
+	apptoken string
+	client   *http.Client
 }
 
 // New creates a new QuickBase.
-func New(url *url.URL) *QuickBase {
-	if url.Scheme == "" {
-		url.Scheme = "https"
-	}
+func New(host string) *QuickBase {
 	return &QuickBase{
-		url: url,
+		host: host,
 		client: &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyFromEnvironment,
@@ -36,7 +34,16 @@ func New(url *url.URL) *QuickBase {
 	}
 }
 
-// QBError represents a detailed error message returned by the QuickBase API
+// Ticket returns the ticket received after successfully authenticating.
+func (q *QuickBase) Ticket() string { return q.ticket }
+
+// SetAppToken sets the QuickBase application token used for API requests.
+func (q *QuickBase) SetAppToken(apptoken string) { q.apptoken = apptoken }
+
+// AppToken returns the QuickBase application token used for API requests.
+func (q *QuickBase) AppToken() string { return q.apptoken }
+
+// QBError represents a detailed error message returned by the QuickBase API.
 type QBError struct {
 	msg    string
 	Code   int
@@ -45,40 +52,64 @@ type QBError struct {
 
 func (e *QBError) Error() string { return e.msg }
 
+// qbrequest has xml fields used in every API request.
+type qbrequest struct {
+	Ticket   string `xml:"ticket"`
+	AppToken string `xml:"apptoken,omitempty"`
+}
+
+// qbresponse has xml fields returned in every API response.
+type qbresponse struct {
+	Action      string `xml:"action"`
+	ErrorCode   int    `xml:"errcode"`
+	ErrorText   string `xml:"errtext"`
+	ErrorDetail string `xml:"errdetail"`
+	Udata       string `xml:"udata"`
+}
+
+// recordField is a field when adding or editing a record.
+type recordField struct {
+	Id    int    `xml:"fid,attr"`
+	Value string `xml:",chardata"`
+}
+
 // Helper functions
 
-// Send an XML API request to QuickBase and populate `response' with the XML
-// response returned from QuickBase.
-func (qb *QuickBase) query(params map[string]string, request, response interface{}) error {
+// Send an XML API request to QuickBase and set response to the XML returned
+// from QuickBase.
+func (qb *QuickBase) query(action, dbid string, request, response interface{}) error {
 	postdata, err := xml.MarshalIndent(request, "", " ")
+	// postdata, err := xml.Marshal(request)
 	if err != nil {
 		return err
 	}
 
-	// Convert `&#39;' to `&apos;' because xml.Marshal runs EscapeText and
-	// transforms `'' to `&#39;', which is fine for HTML but not XML.
+	// Convert &#39; to &apos; because xml.Marshal runs EscapeText and
+	// transforms ' to &#39; which is fine for HTML but not XML.
 	postdata = bytes.Replace(postdata, []byte("&#39;"), []byte("&apos;"), -1)
 
-	req, err := http.NewRequest("POST", params["url"], bytes.NewBuffer(postdata))
+	var url string
+	if action == "API_Authenticate" {
+		url = qb.host + "/db/main"
+	} else {
+		url = qb.host + "/db/" + dbid
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(postdata))
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("Content-Type", "application/xml")
-	req.Header.Set("Quickbase-Action", params["action"])
+	req.Header.Set("Quickbase-Action", action)
 
-	res, err := qb.client.Do(req)
+	resp, err := qb.client.Do(req)
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
-	return xml.NewDecoder(res.Body).Decode(response)
-}
+	err = xml.NewDecoder(resp.Body).Decode(response)
+	resp.Body.Close()
 
-// makeParams returns an initial map with the action set.
-func makeParams(action string) map[string]string {
-	params := make(map[string]string)
-	params["action"] = action
-	return params
+	return err
 }

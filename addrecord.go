@@ -6,58 +6,45 @@ package quickbase
 
 import (
 	"encoding/xml"
-	"fmt"
 )
 
 // API_AddRecord request parameters.
 // See http://goo.gl/SELQDd for more details.
 type AddRecordRequest struct {
-	XMLName     xml.Name         `xml:"qdbapi"`
-	Fields      []addRecordField `xml:"field"`
-	DispRec     int              `xml:"disprec,omitempty"`
-	FForm       int              `xml:"fform,omitempty"`
-	IgnoreError int              `xml:"ignoreError,omitempty"`
-	Ticket      string           `xml:"ticket"`
-	AppToken    string           `xml:"apptoken,omitempty"`
-	Udata       string           `xml:"udata,omitempty"`
-	MsInUTC     int              `xml:"msInUTC,omitempty"`
+	XMLName     xml.Name      `xml:"qdbapi"`
+	Fields      []recordField `xml:"field"`
+	DispRec     int           `xml:"disprec,omitempty"`
+	FForm       int           `xml:"fform,omitempty"`
+	IgnoreError int           `xml:"ignoreError,omitempty"`
+	MsInUTC     int           `xml:"msInUTC,omitempty"`
+	Udata       string        `xml:"udata,omitempty"`
+
+	qbrequest // Fields required for every request
 }
 
 // Response to an API_AddRecord request.
 // See http://goo.gl/SELQDd for more details.
 type AddRecordResponse struct {
-	XMLName     xml.Name `xml:"qdbapi"`
-	Action      string   `xml:"action"`
-	ErrorCode   int      `xml:"errcode"`
-	ErrorText   string   `xml:"errtext"`
-	ErrorDetail string   `xml:"errdetail"`
-	Udata       string   `xml:"udata"`
-	RecordId    string   `xml:"rid"`
-	UpdateId    string   `xml:"update_id"`
-}
+	XMLName  xml.Name `xml:"qdbapi"`
+	RecordId string   `xml:"rid"`
+	UpdateId string   `xml:"update_id"`
 
-// addRecordField is a field when adding a record in QuickBase.
-//
-// The XML structure for fields (and may other things) are inconsistent across
-// the Quickbase API.
-type addRecordField struct {
-	Id    int    `xml:"fid,attr"`
-	Value string `xml:",chardata"`
+	qbresponse // Fields returned in every response
 }
 
 // AddField adds a field to the record.
 func (r *AddRecordRequest) AddField(id int, value string) {
-	r.Fields = append(r.Fields, addRecordField{Id: id, Value: value})
+	r.Fields = append(r.Fields, recordField{Id: id, Value: value})
 }
 
 // AddRecord adds a new record to a QuickBase database.
-func (qb *QuickBase) AddRecord(dbid string, req *AddRecordRequest) (*AddRecordResponse, *QBError) {
-	params := makeParams("API_AddRecord")
-	params["url"] = fmt.Sprintf("%s/db/%s", qb.url, dbid)
+func (qb *QuickBase) AddRecord(dbid string, req *AddRecordRequest) (*AddRecordResponse, error) {
+	req.Ticket = qb.ticket
+	req.AppToken = qb.apptoken
 
 	resp := new(AddRecordResponse)
-	if err := qb.query(params, req, resp); err != nil {
-		return nil, &QBError{msg: err.Error()}
+	if err := qb.query("API_AddRecord", dbid, req, resp); err != nil {
+		return nil, err
 	}
 
 	if resp.ErrorCode != 0 {
