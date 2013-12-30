@@ -22,7 +22,7 @@ const (
 func main() {
     qb := quickbase.New("https://somecorp.quickbase.com")
     if err := qb.Authenticate("PTBarnum", "TopSecret", 1); err != nil {
-        log.Fatalf("Failed to authenticate to QuickBase (%s): %s\n", qbhost, err)
+        log.Fatalf("Failed to authenticate to QuickBase: %s", err)
     }
 
     qb.SetAppToken("dtmd897bfsw85bb6bneceb6wnze3")
