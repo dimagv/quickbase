@@ -1,6 +1,6 @@
-// Copyright 2013 James Massara. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// // Copyright 2014 James Massara. All rights reserved.
+// // Use of this source code is governed by a BSD-style
+// // license that can be found in the LICENSE file.
 
 package quickbase
 
@@ -8,61 +8,44 @@ import (
 	"encoding/xml"
 )
 
-// API_EditRecord request parameters.
-// See http://goo.gl/3OgE49 for more details.
-type EditRecordRequest struct {
-	XMLName     xml.Name      `xml:"qdbapi"`
-	RecordId    int           `xml:"rid,omitempty"`
-	Key         string        `xml:"key,omitempty"`
-	UpdateId    int           `xml:"update_id,omitempty"`
-	Fields      []recordField `xml:"field"`
-	DispRec     int           `xml:"disprec,omitempty"`
-	FForm       int           `xml:"fform,omitempty"`
-	IgnoreError int           `xml:"ignoreError,omitempty"`
-	MsInUTC     int           `xml:"msInUTC,omitempty"`
-	Udata       string        `xml:"udata,omitempty"`
+// EditRecord edits record in the given dbid QuickBase. It returns the number of
+// fields changed.
+func (c *Conn) EditRecord(dbid string, record *Record) (int, error) {
+	req := &editRecordRequest{RecordId: record.Id}
+	req.Ticket = c.ticket
+	req.AppToken = c.apptoken
 
-	qbrequest // Fields required for every request
+	for id, f := range record.fields {
+		req.Fields = append(req.Fields, recordField{Id: id, Value: f.value})
+	}
+
+	rsp := &editRecordResponse{}
+	if err := c.do("API_EditRecord", dbid, req, rsp); err != nil {
+		return -1, err
+	}
+
+	if rsp.ErrorCode != 0 {
+		return -1, &QBError{msg: rsp.ErrorText, Code: rsp.ErrorCode, Detail: rsp.ErrorDetail}
+	}
+
+	return rsp.NumFieldsChanged, nil
 }
 
-// Response to an API_EditRecord request.
-// See http://goo.gl/3OgE49 for more details.
-type EditRecordResponse struct {
+// editRecordRequest is the XML structure for the API_EditRecord call.
+type editRecordRequest struct {
+	XMLName  xml.Name      `xml:"qdbapi"`
+	RecordId int           `xml:"rid,omitempty"`
+	Fields   []recordField `xml:"field"`
+
+	qbRequest // XML fields required for every API call
+}
+
+// editRecordResponse is the XML returned from an API_EditRecord call.
+type editRecordResponse struct {
 	XMLName          xml.Name `xml:"qdbapi"`
 	RecordId         int      `xml:"rid"`
-	UpdateId         string   `xml:"update_id"`
+	UpdateId         int64    `xml:"update_id"`
 	NumFieldsChanged int      `xml:"num_fields_changed"`
 
-	qbresponse // Fields returned in every response
-}
-
-// UpdateField updates a record field.
-func (r *EditRecordRequest) UpdateField(id int, value string) {
-	r.Fields = append(r.Fields, recordField{Id: id, Value: value})
-}
-
-// EditRecord edits record to a QuickBase database.
-func (qb *QuickBase) EditRecord(dbid string, req *EditRecordRequest) (*EditRecordResponse, error) {
-	req.Ticket = qb.ticket
-	req.AppToken = qb.apptoken
-
-	// Only one of the these types in the request
-	if req.RecordId > 0 {
-		req.Key = ""
-	}
-
-	resp := new(EditRecordResponse)
-	if err := qb.query("API_EditRecord", dbid, req, resp); err != nil {
-		return nil, err
-	}
-
-	if resp.ErrorCode != 0 {
-		return nil, &QBError{
-			msg:    resp.ErrorText,
-			Code:   resp.ErrorCode,
-			Detail: resp.ErrorDetail,
-		}
-	}
-
-	return resp, nil
+	qbResponse // XML fields returned in every API call
 }
