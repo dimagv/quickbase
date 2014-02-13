@@ -1,7 +1,7 @@
-quickbase (alpha)
+quickbase (beta)
 =================
 Partial implementation of the QuickBase API (http://www.quickbase.com/api-guide/index.html).
-API is in flux and not considered stable.
+API is in flux and not considered stable. Pull Requests are welcome!
 
 Example
 =======
@@ -9,8 +9,9 @@ Example
 package main
 
 import (
-    "github.com/jmassara/quickbase"
     "log"
+
+    "github.com/jmassara/quickbase"
 )
 
 const (
@@ -20,28 +21,28 @@ const (
 )
 
 func main() {
-    qb := quickbase.New("https://somecorp.quickbase.com")
-    if err := qb.Authenticate("PTBarnum", "TopSecret", 1); err != nil {
+    conn, err := quickbase.Login("https://somecorp.quickbase.com", "PTBarnum", "TopSecret")
+    if err != nil {
         log.Fatalf("Failed to authenticate to QuickBase: %s", err)
     }
 
-    qb.SetAppToken("dtmd897bfsw85bb6bneceb6wnze3")
+    conn.SetAppToken("dtmd897bfsw85bb6bneceb6wnze3")
 
-    query, err := qb.DoQuery("bddfa5nbx", &quickbase.DoQueryRequest{
-        Udata:   "mydata",
-        Query:   "{'5'.CT.'Ragnar Lodbrok'}AND{'5'.CT.'Acquisitions'}",
+    opts := &quickbase.DoQueryOptions{
         Clist:   "5.6.7.22.3",
         Slist:   "3",
         Options: "num-4.sortorder-A.skp-10.onlynew",
-    })
-
-    if err != nil {
-        log.Fatalf("Failed to query QuickBase (%s): %s\n", qbhost, err)
     }
 
-    for _, r := range query.GetRecords() {
-        log.Printf("Business Phone Number: %s\n", r.Fields[BusinessPhoneNumber].Value)
-        log.Printf("                Email: %s\n", r.Fields[Email].Value)
+    records, err := conn.DoQuery("bddfa5nbx", "{'5'.CT.'Ragnar Lodbrok'}AND{'5'.CT.'Acquisitions'}", opts)
+    if err != nil {
+        log.Fatalf("Failed to query QuickBase: %s\n", err)
+    }
+
+    for _, record := range records {
+        fields := record.GetFieldsById()
+        log.Printf("Business Phone Number: %s\n", fields[BusinessPhoneNumber])
+        log.Printf("                Email: %s\n", fields[Email])
     }
 }
 ```
