@@ -53,9 +53,9 @@ func Login(url, username, password string) (*Conn, error) {
 
 	if rsp.ErrorCode != 0 {
 		return nil, &QBError{msg: rsp.ErrorText, Code: rsp.ErrorCode, Detail: rsp.ErrorDetail}
-	} else {
-		conn.ticket = rsp.Ticket
 	}
+
+	conn.ticket = rsp.Ticket
 
 	return conn, nil
 }
