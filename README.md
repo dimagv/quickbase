@@ -1,5 +1,7 @@
 quickbase (beta)
 =================
+[![GoDoc](https://godoc.org/github.com/jmassara/quickbase?status.png)](https://godoc.org/github.com/jmassara/quickbase)
+
 Partial implementation of the QuickBase API (http://www.quickbase.com/api-guide/index.html).
 API is in flux and not considered stable. Pull Requests are welcome!
 
