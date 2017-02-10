@@ -35,7 +35,7 @@ type Conn struct {
 //
 // See http://www.quickbase.com/api-guide/index.html#authenticate.html for more
 // information.
-func Login(url, username, password string) (*Conn, error) {
+func Login(url, username, password string, hours int) (*Conn, error) {
 	conn := &Conn{
 		url: url,
 		client: &http.Client{
@@ -44,7 +44,7 @@ func Login(url, username, password string) (*Conn, error) {
 			},
 		},
 	}
-	req := &authRequest{Username: username, Password: password}
+	req := &authRequest{Username: username, Password: password, Hours: hours}
 	rsp := &authResponse{}
 
 	if err := conn.do("API_Authenticate", "", req, rsp); err != nil {
@@ -193,6 +193,7 @@ type authRequest struct {
 	XMLName  xml.Name `xml:"qdbapi"`
 	Username string   `xml:"username"`
 	Password string   `xml:"password"`
+	Hours    int      `xml:"hours"`
 }
 
 type authResponse struct {
